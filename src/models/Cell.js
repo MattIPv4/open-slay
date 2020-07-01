@@ -34,7 +34,7 @@ const hexBounds = hexes => {
     rotated.rotate(Math.PI);
 
     // Return a set of vertexes
-    return rotated.toArray().map(vertex => new Vector(...vertex));
+    return rotated.toArray().map(vertex => new Vector(...vertex)).slice(0, -1);
 };
 
 const center = vertexes => {
@@ -79,6 +79,7 @@ export default class Cell {
 
         // Get the bounds for the kingdom
         const bounds = hexBounds(kingdom);
+        console.log('bounds', bounds);
 
         // Create the bounds poly
         const pos = new Vector(0, 0);
