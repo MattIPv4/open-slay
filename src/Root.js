@@ -2,7 +2,6 @@ import { extendHex, defineGrid } from "honeycomb-grid";
 
 import {
   useNewComponent,
-  useChild,
   Canvas,
 } from "@hex-engine/2d";
 
@@ -22,12 +21,13 @@ export default function Root() {
   // Create the "state"
   const state = {
     grid,
+    selectedKingdom: null,
   };
 
   // Go!
   grid.forEach(hex => {
     hex.origin = { x: hex.x, y: hex.y };
     hex.data = new Cell(hex, state);
-    useChild(() => hex.data.render());
+    hex.data.render();
   });
 }

@@ -5,7 +5,6 @@
   "dependencies": {
     "@hex-engine/2d": "^0.4.2",
     "@turf/helpers": "^6.1.4",
-    "@turf/transform-rotate": "^5.1.5",
     "@turf/union": "^6.0.3",
     "honeycomb-grid": "^3.1.7",
     "polygon": "^1.0.2"
