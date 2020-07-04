@@ -4,6 +4,8 @@ import union from '@turf/union';
 import PolygonJs from 'polygon';
 
 const hexBounds = hexes => {
+    // TODO: this breaks if the hexes form a "circle" with a hole inside
+
     // Be quick for a single hex
     if (hexes.length === 1) return hexes[0].data.corners();
 
@@ -41,48 +43,69 @@ const center = vertexes => {
 };
 
 export default class Kingdom {
-    constructor(cells, state) {
-        this.cells = cells;
+    constructor(hexes, state) {
+        this.hexes = hexes;
         this.state = state;
-        this.player = cells[0].player;
-        this.bounds = hexBounds(this.cells);
+        this.player = hexes[0].data.player;
+        this.bounds = hexBounds(this.hexes);
         this.destroyCb = null;
     }
 
-    static for (cell) {
-        console.log('new kingdom for', cell);
+    static for (hex) {
+        console.log('new kingdom for', hex);
 
-        const toExplore = [cell];
-        const kingdomCells = [cell];
+        const toExplore = [hex];
+        const kingdomHexes = [hex];
         const explored = [];
 
         // Find all neighbouring cells that are of the same player
         while (toExplore.length) {
-            const cell = toExplore.pop();
-            explored.push(cell);
+            const hex = toExplore.pop();
+            explored.push(hex);
 
-            const direct = cell.data.state.grid.neighborsOf(cell)
-                .filter(hex => hex !== undefined)
-                .filter(hex => hex.data.player === cell.data.player);
+            const direct = hex.data.state.grid.neighborsOf(hex)
+                .filter(h => h !== undefined)
+                .filter(h => h.data.player === hex.data.player);
 
-            kingdomCells.push(...direct.filter(hex => !kingdomCells.includes(hex)));
-            toExplore.push(...direct.filter(hex => !toExplore.includes(hex) && !explored.includes(hex)))
+            kingdomHexes.push(...direct.filter(h => !kingdomHexes.includes(h)));
+            toExplore.push(...direct.filter(h => !toExplore.includes(h) && !explored.includes(h)))
         }
 
         // Can't have a kingdom of 1
-        if (kingdomCells.length === 1) {
-            cell.data.kingdom = null;
+        if (kingdomHexes.length === 1) {
+            hex.data.kingdom = null;
             return null;
         }
 
         // Return the kingdom
-        const kingdom = new Kingdom(kingdomCells, cell.data.state);
-        kingdomCells.forEach(hex => hex.data.kingdom = kingdom);
+        const kingdom = new Kingdom(kingdomHexes, hex.data.state);
+        kingdomHexes.forEach(h => h.data.kingdom = kingdom);
         return kingdom;
     }
 
     destroy() {
         if (this.destroyCb) this.destroyCb();
+    }
+
+    add(hex) {
+        if (hex.data.kingdom) hex.data.kingdom.remove(hex);
+
+        this.hexes.push(hex);
+        this.bounds = hexBounds(this.hexes);
+        hex.data.kingdom = this;
+
+        // TODO: check if we need to merge any kingdoms
+
+        if (this.state.selectedKingdom === this) {
+            this.destroy()
+            this.render(hex.data);
+        }
+    }
+
+    remove(hex) {
+        this.hexes = this.hexes.filter(c => c !== hex);
+        this.bounds = hexBounds(this.hexes);
+        hex.data.kingdom = null;
     }
 
     render(parentCell) {
@@ -93,7 +116,7 @@ export default class Kingdom {
         const poly = new Polygon(this.bounds);
 
         // Adjust the position for any shift in the centroid through processing
-        const vertexes = this.cells
+        const vertexes = this.hexes
             .map(hex => hex.data.corners()).flat();
         const kingdomCenter = center(vertexes);
         const boundsCenter = center(this.bounds);

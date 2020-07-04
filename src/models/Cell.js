@@ -11,8 +11,8 @@ const colors = [
 ];
 
 export default class Cell {
-    constructor(cell, state) {
-        this.cell = cell;
+    constructor(hex, state) {
+        this.hex = hex;
         this.state = state;
         this.player = Math.round(Math.random() * (colors.length - 1));
         this.kingdom = undefined;
@@ -23,27 +23,40 @@ export default class Cell {
     }
 
     getKingdom() {
-        if (this.kingdom === undefined) return Kingdom.for(this.cell);
+        if (this.kingdom === undefined) return Kingdom.for(this.hex);
         return this.kingdom;
     }
 
     click() {
-        if (this.state.selectedKingdom)
-            this.state.selectedKingdom.destroy();
-
+        // If has a kingdom, select it
         const kingdom = this.getKingdom();
-        this.state.selectedKingdom = kingdom;
-        if (kingdom) kingdom.render(this);
+        if (kingdom) {
+            if (this.state.selectedKingdom)
+                this.state.selectedKingdom.destroy();
+
+            this.state.selectedKingdom = kingdom;
+            if (kingdom) kingdom.render(this);
+
+            return;
+        }
+
+        // If no kingdom, add it to the current
+        // TODO: only allow this on direct neighbours of the current kingdom
+        if (this.state.selectedKingdom) {
+            this.player = this.state.selectedKingdom.player;
+            this.state.selectedKingdom.add(this.hex);
+            console.log(this.state.selectedKingdom);
+        }
     }
 
     corners() {
-        const point = this.cell.toPoint();
-        return this.cell.corners().map(corner => corner.add(point));
+        const point = this.hex.toPoint();
+        return this.hex.corners().map(corner => corner.add(point));
     }
 
     center() {
-        const point = this.cell.toPoint();
-        return this.cell.center().add(point);
+        const point = this.hex.toPoint();
+        return this.hex.center().add(point);
     }
 
     render() {
